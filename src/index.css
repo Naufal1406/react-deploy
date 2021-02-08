@@ -1,4 +1,4 @@
-body {
+/* body {
   margin: 0;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
     'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
@@ -10,4 +10,114 @@ body {
 code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
     monospace;
+} */
+
+
+* {
+  margin: 0;
+  padding: 0;
+  font-family: 'Open Sans Condensed', sans-serif;
+  font-size: 20px;
+  font-weight: bold;
+}
+
+.content {
+  padding: 0;
+  margin: 0;
+}
+.titleWeb {
+  padding: 5px;
+  color: black;
+}
+
+.titleWeb h3 {
+  padding: 5px;
+}
+
+.contentSection {
+  margin: 10px;
+}
+.addTask {
+  margin-top: 10px;
+  }
+.card-body {
+  margin: 0;
+}
+
+.task input {
+  border: 2px solid black;
+}
+
+.container {
+  margin-top: 10px;
+}
+
+.fullCalender {
+  margin-top: 12px;
+  margin-bottom: 12px;
+}
+.form-group {
+  margin-bottom: 12px;
+}
+
+.blue {
+background-color: #1F7EE6 ;
+}
+
+.green{
+background-color: #1FF206;
+}
+
+.yellow{
+background-color: #D2FC00;
+}
+
+.orange{
+background-color: #FF8900;
+}
+
+.purple {
+background-color: #CF2AFF ;
+}
+
+.pink{
+background-color: #FE96DB;
+}
+
+.gray {
+background-color: #81888A ;  
+}
+
+.brown{
+background-color: #924D0D ;
+}
+
+.titleTable {
+  text-align: center;
+}
+
+.addTask {
+  margin-bottom: 12px;
+}
+
+input.fromTime {
+  margin-left: 12px;
+  text-align: center;
+}
+
+.header , .data {
+  text-align: center;
+}
+
+.action {
+  margin: 10px;
+  text-align: center;
+}
+
+.actionBtn {
+  text-align: center;
+}
+
+#dataTables {
+  margin: 50px;
 }
