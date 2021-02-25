@@ -92,6 +92,19 @@ background-color: #81888A ;
 background-color: #924D0D ;
 }
 
+.filterCalendar {
+  margin-right: 50px;
+  margin-left: 10px;
+  
+}
+
+#appSelector {
+  border: 1px solid black;
+  padding-left: 20px;
+  display: flex;
+  flex-direction: row;
+  margin-bottom: 25px;
+}
 .titleTable {
   text-align: center;
 }
@@ -105,7 +118,7 @@ input.fromTime {
   text-align: center;
 }
 
-.header , .data {
+.header , .data , .filter {
   text-align: center;
 }
 
@@ -120,4 +133,8 @@ input.fromTime {
 
 #dataTables {
   margin: 50px;
+}
+
+#buttonExport {
+  margin: 15px;
 }

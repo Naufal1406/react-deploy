@@ -1,5 +1,5 @@
 import React, {Component} from "react";
-import {Table} from "react-bootstrap";
+// import {Table} from "react-bootstrap";
 import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid'
@@ -9,10 +9,16 @@ import "datatables.net-dt/js/dataTables.dataTables";
 import "datatables.net-dt/css/jquery.dataTables.min.css";
 import "datatables.net-responsive-dt/js/responsive.dataTables.js";
 import "datatables.net-responsive-dt/css/responsive.dataTables.css";
+import 'datatables.net-buttons/js/buttons.colVis';
+import 'datatables.net-buttons/js/buttons.html5';
+import 'datatables.net-buttons/js/buttons.flash';
+import 'datatables.net-buttons/js/buttons.print';
 import "jquery/dist/jquery.min.js";
 import $ from "jquery";
-import Swal from "sweetalert2"
-import logoBca from "../asset/img/logobca.jpg"
+import Swal from "sweetalert2";
+import ReactHTMLTableToExcel from "react-html-table-to-excel";
+// import MaterialTable, { MTableToolbar } from "material-table";
+// import MUIDataTable from "mui-datatables";
 
 class EventCalender extends Component{
     constructor(props){
@@ -22,16 +28,14 @@ class EventCalender extends Component{
             fields : {},
             schedule : [],
             number : 1,
-            // title : [],
-            // start : [],
-            // end : [],
-            // input : []
+            fileName : 'SQi Schedule'
         }
 
     }
 
     componentDidMount(event) {
         this.getSchedule();
+        
     }
 
     getSchedule() {
@@ -41,11 +45,49 @@ class EventCalender extends Component{
             this.setState({
                 schedule : dataSchedule
             });
+            // DATATABLE 
             $(function() {
-                $("#scheduleTable").DataTable({
-                    responsive : true,
-                })
+                // Setup - add a text input to each footer cell
+                $('.filter').each( function (i) {
+                    var title = $('#example thead th').eq( $(this).index() ).text();
+                    if(title==="application"){
+                        $(this).html( '<button type="text" placeholder="Search '+title+'" data-index="'+i+'" />' );
+                    } else {
+                        $(this).html( '<input type="text" placeholder="Search '+title+'" data-index="'+i+'" />' );
+                    }
+                    
+                } );
+            
+                // DataTable
+                var table = $('#example').DataTable( {
+                    scrollY:        "300px",
+                    scrollX:        true,
+                    scrollCollapse: true,
+                    paging:         true,
+                    fixedColumns:   true,
+                    responsive:     true,
+                    dom: 'Bfrtip',
+                    buttons: [
+                                'copy', 'csv', 'excel', 'pdf', 'print'
+                            ]
+                } );
+            
+                // Filter event handler
+                $( table.table().container() ).on( 'keyup', '.filter input', function () {
+                    table
+                        .column( $(this).data('index') )
+                        .search( this.value )
+                        .draw();
+                } );
             })
+
+
+            
+            // $(function() {
+            //     $("#example").DataTable({
+            //         responsive : true,
+            //     })
+            // })
         });
         
     }
@@ -53,6 +95,7 @@ class EventCalender extends Component{
     getScheduleById = (id) => {
         Axios.get('/sqi-schedule/get-scheduleById/' + id)
         .then((response)=>{
+            console.log(response.data)
             this.setState({
                 id : response.data.id,
                 task : response.data.task,
@@ -63,6 +106,7 @@ class EventCalender extends Component{
                 toTime : response.data.toTime,
                 color : response.data.color
             });
+            
         });
     }
 
@@ -86,12 +130,13 @@ class EventCalender extends Component{
         const fields = this.state.fields;
         const schedule = {
             task : fields["task"],
-            app : fields["app"],
+            app : fields["app"][1],
             fromDate : fields["fromDate"],
             toDate : fields["toDate"],
             fromTime : fields["fromTime"],
             toTime :fields["toTime"],
-            color : fields["color"]
+            // color : fields["color"]
+            color : fields["app"][0]
         }
         console.log(schedule);
 
@@ -113,13 +158,14 @@ class EventCalender extends Component{
     updateSchedule = (id) => {
         const schedule = {
             task : this.state.task,
-            app : this.state.app,
+            app : this.state.app[1],
             fromDate : this.state.fromDate,
             fromTime : this.state.toTime,
             toDate : this.state.toDate,
             toTime : this.state.toTime,
-            color : this.state.color
-        }   
+            color : this.state.app[0]
+        }
+        console.log(schedule);   
 
         Axios.put('/sqi-schedule/update-schedule/' + id, schedule)
         .then((response)=>{
@@ -141,34 +187,95 @@ class EventCalender extends Component{
             [e.target.name] : e.target.value
         })
     }
+
+    handleUpdateApp = (e) => {
+        console.log(e);
+        this.setState({
+            [e.target.name] : e.target.value.split(",")
+        })
+    }
+
     handleChange(field, e){
         let fields = this.state.fields;
         fields[field] = e.target.value;
         this.setState({ fields });
     }
+
+    handleChangeApp(field, e) {
+        let fields = this.state.fields;
+        fields[field] = e.target.value.split(",");
+        const color = fields[field][0];
+        const app = fields[field][1];
+        this.setState({ fields });
+    }
     
+    // exportTableToExcel(tableID, filename = ''){
+    //     var downloadLink;
+    //     var dataType = 'application/vnd.ms-excel';
+    //     var tableSelect = document.getElementById("example1");
+    //     var tableHTML = tableSelect.outerHTML.replace(/ /g, '%20');
+        
+    //     // Specify file name
+    //     filename = filename?filename+'.xls':'excel_data.xls';
+        
+    //     // Create download link element
+    //     downloadLink = document.createElement("a");
+        
+    //     document.body.appendChild(downloadLink);
+        
+    //     if(navigator.msSaveOrOpenBlob){
+    //         var blob = new Blob(['\ufeff', tableHTML], {
+    //             type: dataType
+    //         });
+    //         navigator.msSaveOrOpenBlob( blob, filename);
+    //     }else{
+    //         // Create a link to the file
+    //         downloadLink.href = 'data:' + dataType + ', ' + tableHTML;
+        
+    //         // Setting the file name
+    //         downloadLink.download = filename;
+            
+    //         //triggering the function
+    //         downloadLink.click();
+    //     }
+    // }
+
+    // jQuery DataTable
+    filterTable() {
+        // Setup - add a text input to each footer cell
+        // $('#example tfoot th').each( function (i) {
+        //     var title = $('#example thead th').eq( $(this).index() ).text();
+        //     $(this).html( '<input type="text" placeholder="Search '+title+'" data-index="'+i+'" />' );
+        // } );
+      
+        // // DataTable
+        // var table = $('#example').DataTable( {
+        //     scrollY:        "300px",
+        //     scrollX:        true,
+        //     scrollCollapse: true,
+        //     paging:         true,
+        //     fixedColumns:   true
+        // } );
+     
+        // // Filter event handler
+        // $( table.table().container() ).on( 'keyup', 'tfoot input', function () {
+        //     table
+        //         .column( $(this).data('index') )
+        //         .search( this.value )
+        //         .draw();
+        // } );
+    }
+
+
     render(){
         const { schedule } = this.state;
         let { number } = this.state;
         return(
             <div className = "content">
-                {/* <section>
-                    <ul className="nav nav-tabs">
-                        <li className="nav-item">
-                        <a id="fullCalender" className="nav-link active" aria-current="page" href="#">Calender</a>
-                        </li>
-                        <li className="nav-item">
-                        <a id="report" className="nav-link" aria-current="page" href="#">Report</a>
-                        </li>
-                        
-                    </ul>
-                </section> */}
-
                 <section className="titleSection">
                     <div className="titleWeb">                       
                         <h3>
-                        <span className="material-icons" style={{fontSize : "40px"}}>event_available</span>
-                                                   
+                        <span className="material-icons" style={{fontSize : "40px"}}>event_available</span>                    
                             SQi Calendar
                         </h3>
 
@@ -178,9 +285,10 @@ class EventCalender extends Component{
                 <section className="contentSection">
                     {/* Add Task Button */}
                     <button type="button" className="btn btn-primary addTask" data-bs-toggle="modal" data-bs-target="#addTaskModal">
+                    <div><span class="material-icons inputTask" style={{position : "relative"}}>assignment</span></div>
                     Add Task
                     </button>
-                </section>
+                </section>                                          
 
                 {/* Modal Add Task  */}
                 <section className="contentSection">
@@ -188,10 +296,12 @@ class EventCalender extends Component{
                     <div className="modal-dialog">
                     <div className="modal-content">
                         <div className="modal-header">
-                            <h5 className="modal-title" id="exampleModalLabel">Add Your Task</h5>
+                            <span class="material-icons inputTask" style={{marginRight : "5px"}}>assignment</span>
+                            <h5 className="modal-title" id="exampleModalLabel"> 
+                                Add Your Task
+                            </h5>
                             <button type="button" className="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                         </div>
-                        {/* <form role="form" id="addTaskSchedule" onSubmit={this.taskSubmit.bind(this)}> */}
                             <div className="modal-body">
                                 <div className="card-body">
                                     <div className="row">
@@ -227,17 +337,17 @@ class EventCalender extends Component{
                                                     className=" application col-sm-12" 
                                                     name="app" 
                                                     id="appItem"
-                                                    onChange={this.handleChange.bind(this, "app")}
-                                                    value={this.state.fields["app"]}>
+                                                    onChange={this.handleChangeApp.bind(this, "app")}
+                                                    value={this.state.fields["app"]}>                                                        
                                                         <option value="null">-- Choose Application --</option>
-                                                        <option className="selectApp" value="CRM Halo">CRM Halo</option>
-                                                        <option className="selectApp" value="Halo Lite">Halo Lite</option>
-                                                        <option className="selectApp" value="Halo Apps">Halo Apps</option>
-                                                        <option className="selectApp" value="Spekta BCA">Spekta BCA</option>
-                                                        <option className="selectApp" value="Telephony">Telephony</option>
-                                                        <option className="selectApp" value="SOSMED">SOSMED</option>
-                                                        <option className="selectApp" value="Chain">Chain</option>
-                                                        <option className="selectApp" value="MQA">MQA</option>
+                                                        <option className="selectApp" id="crmHalo" value="#62A1F3,CRM Halo">CRM Halo</option>
+                                                        <option className="selectApp" id="haloLite" value="#71E263,Halo Lite">Halo Lite</option>
+                                                        <option className="selectApp" id="haloApps"value="#F2F171,Halo Apps">Halo Apps</option>
+                                                        <option className="selectApp" id ="spekta"value="#F8C957,Specta">Specta</option>
+                                                        <option className="selectApp" id="telephony" value="#E18FF0,Telephony">Telephony</option>
+                                                        <option className="selectApp" id="sosmed" value="#FF66C5,SOSMED">SOSMED</option>
+                                                        <option className="selectApp" id="chain" value="#CDBCCF,Chain">Chain</option>
+                                                        <option className="selectApp" id="mqa" value="#D8854F,MQA">MQA</option>
                                                     </select>
                                                 </div>
                                             </div>                                
@@ -295,34 +405,6 @@ class EventCalender extends Component{
                                                 
                                             </div>                                
                                         </div>
-
-                                        <div className="col-sm-12">
-                                            <div className="form-group">
-                                                <div className="color col-sm-6">
-                                                    <label>Choose Color</label>
-                                                </div>
-                                                <div className="chooseColor">
-                                                    <select
-                                                    className="col-sm-6" 
-                                                    name="color" 
-                                                    id="selectColor"
-                                                    onChange={this.handleChange.bind(this, "color")}
-                                                    value={this.state.fields["color"]}>
-                                                        <option value="null">-- Choose Color --</option>
-                                                        <option className="blue" value="#1F7EE6">CRM Halo</option>
-                                                        <option className="green" value="#1FF206">Halo Lite</option>
-                                                        <option className="yellow" value="#D2FC00">Halo Apps</option>
-                                                        <option className="orange" value="#FF8900">Spekta BCA</option>
-                                                        <option className="purple" value="#CF2AFF">Telephony</option>
-                                                        <option className="pink" value="#FE96DB">SOSMED</option>
-                                                        <option className="gray" value="#81888A">Chain</option>
-                                                        <option className="brown" value="#924D0D">MQA</option>
-                                                    </select>
-                                                </div>
-                                                
-                                            </div>                                
-                                        </div>
-
                                     </div>
                                 </div>
                             </div> 
@@ -364,7 +446,8 @@ class EventCalender extends Component{
                     <div className="modal-dialog">
                     <div className="modal-content">
                         <div className="modal-header">
-                            <h5 className="modal-title" id="exampleModalLabel">Add Your Task</h5>
+                            <span class="material-icons inputTask" style={{marginRight : "5px"}}>assignment</span>
+                            <h5 className="modal-title" id="exampleModalLabel">Edit Your Task</h5>
                             <button type="button" className="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                         </div>
                             <div className="modal-body">
@@ -402,17 +485,17 @@ class EventCalender extends Component{
                                                     className=" application col-sm-12" 
                                                     name="app" 
                                                     id="appItem"
-                                                    onChange={this.handleUpdateSchedule}
+                                                    onChange={this.handleUpdateApp}
                                                     value={this.state.app}>
-                                                        <option value="null">-- Choose Application --</option>
-                                                        <option className="selectApp" value="CRM Halo">CRM Halo</option>
-                                                        <option className="selectApp" value="Halo Lite">Halo Lite</option>
-                                                        <option className="selectApp" value="Halo Apps">Halo Apps</option>
-                                                        <option className="selectApp" value="Spekta BCA">Spekta BCA</option>
-                                                        <option className="selectApp" value="Telephony">Telephony</option>
-                                                        <option className="selectApp" value="SOSMED">SOSMED</option>
-                                                        <option className="selectApp" value="Chain">Chain</option>
-                                                        <option className="selectApp" value="MQA">MQA</option>
+                                                        <option value="null">{this.state.app}</option>
+                                                        <option className="selectApp" value="#62A1F3,CRM Halo">CRM Halo</option>
+                                                        <option className="selectApp" value="#71E263,Halo Lite">Halo Lite</option>
+                                                        <option className="selectApp" value="#F2F171,Halo Apps">Halo Apps</option>
+                                                        <option className="selectApp" value="#F8C957,Specta">Specta</option>
+                                                        <option className="selectApp" value="#E18FF0,Telephony">Telephony</option>
+                                                        <option className="selectApp" value="#FF66C5,SOSMED">SOSMED</option>
+                                                        <option className="selectApp" value="#CDBCCF,Chain">Chain</option>
+                                                        <option className="selectApp" value="#D8854F,MQA">MQA</option>
                                                     </select>
                                                 </div>
                                             </div>                                
@@ -470,34 +553,6 @@ class EventCalender extends Component{
                                                 
                                             </div>                                
                                         </div>
-
-                                        <div className="col-sm-12">
-                                            <div className="form-group">
-                                                <div className="color col-sm-6">
-                                                    <label>Choose Color</label>
-                                                </div>
-                                                <div className="chooseColor">
-                                                    <select
-                                                    className="col-sm-6" 
-                                                    name="color" 
-                                                    id="selectColor"
-                                                    onChange={this.handleUpdateSchedule}
-                                                    value={this.state.color}>
-                                                        <option value="null">-- Choose Color --</option>
-                                                        <option className="blue" value="#1F7EE6">CRM Halo</option>
-                                                        <option className="green" value="#1FF206">Halo Lite</option>
-                                                        <option className="yellow" value="#D2FC00">Halo Apps</option>
-                                                        <option className="orange" value="#FF8900">Spekta BCA</option>
-                                                        <option className="purple" value="#CF2AFF">Telephony</option>
-                                                        <option className="pink" value="#FE96DB">SOSMED</option>
-                                                        <option className="gray" value="#81888A">Chain</option>
-                                                        <option className="brown" value="#924D0D">MQA</option>
-                                                    </select>
-                                                </div>
-                                                
-                                            </div>                                
-                                        </div>
-
                                     </div>
                                 </div>
                             </div> 
@@ -510,6 +565,25 @@ class EventCalender extends Component{
                     </div>
                 </div>
             </section>
+
+            <section>
+                <div className="col-lg-4">
+                    <label for="calendar_view">Filter Applications</label>
+                        <div className="input-group">
+                            <select className="filter" id="calendar_filter" multiple={true}>
+                                <option value="CRM Halo">CRM Halo</option>
+                                <option value="Halo Lite">Halo Lite</option>
+                                <option value="Halo Apps">Halo Apps</option>
+                                <option value="Specta">Specta</option>
+                                <option value="Telephony">Telephony</option>
+                                <option value="SOSMED">SOSMED</option>
+                                <option value="Chain">Chain</option>
+                                <option value="MQA">MQA</option>
+                            </select>
+                        </div>
+                </div>
+                                      
+            </section>  
 
             <section className="contentSection">
                 <FullCalendar
@@ -533,14 +607,32 @@ class EventCalender extends Component{
                 />
                 </section>
 
+                {/*BUTTON EXPORT TO EXCEL  */}
+                {/* <section id="buttonExport">
+                    <ReactHTMLTableToExcel
+                        className="btn btn-primary"
+                        table="example"
+                        filename="SQiReport"
+                        sheet="Sheet"
+                        buttonText="Export To Excel File"/>
+                </section>*/}               
+               
                 <section id="dataTables" className="contentSection">
-                    {/* Table */}
                     <table 
-                        id="scheduleTable"
+                        id="example"
+                        className="row-border hover stripe display nowrap"
                         responsive 
                         striped 
-                        style={{ width : "100%"}}>
+                        style={{ width : "100%", border : "3px solid #FAF8F7"}}>
                     <thead>
+                        <tr id="filtering">
+                            <th className="filter">No.</th>
+                            <th className="filter">Application</th>
+                            <th className="filter">Task</th>
+                            <th className="filter">From Date</th>
+                            <th className="filter">To Date</th>
+                            <th className="filter">Action</th>
+                        </tr>
                         <tr>
                             <th className="header">No.</th>
                             <th className="header">Application</th>
@@ -550,7 +642,7 @@ class EventCalender extends Component{
                             <th className="header">Action</th>
                         </tr>
                     </thead>
-                    <tbody>
+                    <tbody>                            
                         {schedule.map((result)=>{
                             return(
                                 <tr>
@@ -558,27 +650,135 @@ class EventCalender extends Component{
                                     <td>{result.app}</td>
                                     <td>{result.task}</td>
                                     <td className="data">
-                                        {/* {result.fromDate} */}
-                                    {`${result.fromDate}T${result.fromTime}`}
+                                        {`${result.fromDate}`}
                                     </td>
                                     <td className="data">
-                                        {/* {result.toDate} */}
-                                        {`${result.toDate}T${result.toTime}`}
+                                        {`${result.toDate}`}
                                     </td>
                                     <td>
                                         <div className="actionBtn">
-                                        <button type="button" className="btn btn-warning action" data-bs-toggle="modal" data-bs-target="#updateTaskModal" onClick={()=> this.getScheduleById(result.id)}>Update</button>
-                                        <button type="button" className="btn btn-danger action" data-bs-toggle="modal" data-bs-target="#deleteTaskModal" onClick={()=> this.getScheduleById(result.id)}>Delete</button>
+                                        <button type="button" className="btn btn-warning action" data-bs-toggle="modal" data-bs-target="#updateTaskModal" onClick={()=> this.getScheduleById(result.id)}><span class="material-icons">edit</span></button>
+                                        <button type="button" className="btn btn-danger action" data-bs-toggle="modal" data-bs-target="#deleteTaskModal" onClick={()=> this.getScheduleById(result.id)}><span class="material-icons">delete</span></button>
                                         </div>
                                     </td>
                                 </tr>
                             );
                         })}
                     </tbody>
+                    {/* <tfoot>
+                        <tr>
+                            <th>No.</th>
+                            <th>Application</th>
+                            <th>Task</th>
+                            <th>From Date</th>
+                            <th>To Date</th>
+                            <th style={{display : "none"}}>Action</th>
+                        </tr>
+                    </tfoot> */}
+
                     </table>
                 </section>
-                {/* </table> */}
 
+
+                {/* MATERIAL TABLE */}
+                {/* <section style={{margin : "30px"}}>
+                    <MaterialTable
+                    id = "scheduleTable"
+                    title ="Task Scheduling Review"
+                    columns =
+                    {[
+                        { title : 'No.' , field : "no", filtering : false},
+                        { title : 'Application',
+                            field : "app",
+                            lookup : {
+                                "CRM Halo" : 'CRM Halo',
+                                "Halo Lite" : 'Halo Lite',
+                                "Halo Apps" : 'Halo Apps',
+                                "Specta" : 'Specta',
+                                "Telephony" : 'Telephony',
+                                "SOSMED" : 'SOSMED',
+                                "Chain" : 'Chain',
+                                "MQA" : 'MQA'}},
+                        { title : 'Task', field : "task"},
+                        { title : "From Date", field : "fromDate"},
+                        { title : "To Date", field : "toDate"}
+                    ]}
+                    data = {
+                        schedule.map((result)=>{
+                            return{
+                                no : number++,
+                                id : result.id,
+                                app : result.app,
+                                task : result.task,
+                                fromDate : `${result.fromDate}`,
+                                toDate : `${result.toDate}`,
+                            }
+                        })
+                        }
+                    options = 
+                    {{ 
+                        filtering : true,
+                        actionsColumnIndex: -1,
+                        exportButton : true,
+                        rowStyle: {
+                            backgroundColor: '#EEE',
+                          } 
+                    }}
+                    actions = 
+                    {[
+                        {
+                            icon: 'edit',
+                            tooltip : 'Edit Task',
+                            onClick : (event, rowData) => {
+                                console.log(rowData.id);
+                                this.getScheduleById(rowData.id);
+                            }
+                        },
+                        {
+                            icon: 'delete',
+                            tooltip : 'Delete Task',
+                            onClick : (event, rowData) => {
+                                console.log(rowData.id);
+                                this.getScheduleById(rowData.id);
+                            }
+                        }
+                    ]}
+
+                    components={{
+                        Action: props => {
+                            if(props.action.icon === "edit") {
+                                return(
+                                    <button type="button" className="btn btn-warning action" data-bs-toggle="modal" onClick={(event) => props.action.onClick(event, props.data)}data-bs-target="#updateTaskModal"><span class="material-icons">edit</span></button>
+                                )
+                            }
+                            if(props.action.icon === "delete") {
+                                return(
+                                    <button type="button" className="btn btn-danger action" data-bs-toggle="modal" onClick={(event) => props.action.onClick(event, props.data)}data-bs-target="#deleteTaskModal"><span class="material-icons">delete</span></button>
+                                )
+                            }                            
+                        }                           
+                      }}
+                    />
+                </section> */}
+
+                {/* MUI DATATABLE */}
+                {/* <MUIDataTable
+                    title ={"Task Schedule Review"}
+                    data = {
+                            schedule.map((result)=>{
+                                return{
+                                    no : number++,
+                                    id : result.id,
+                                    app : result.app,
+                                    task : result.task,
+                                    fromDate : `${result.fromDate}`,
+                                    toDate : `${result.toDate}`,
+                                }
+                            })
+                            }
+                    columns ={['No','Application','Task','From Date','To Date']}
+                    options= {{filterType :'checkbox'}}
+                    /> */}
                 
             </div>
         );
@@ -586,3 +786,7 @@ class EventCalender extends Component{
 }
 
 export default EventCalender;
+
+{/* <section id="buttonExport">
+                    <button className="btn btn-primary" onClick={()=> this.exportTableToExcel("example1")}>Export to Excel</button>
+                </section>  */}
