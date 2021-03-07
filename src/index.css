@@ -18,7 +18,7 @@ code {
   padding: 0;
   font-family: 'Open Sans Condensed', sans-serif;
   font-size: 20px;
-  font-weight: bold;
+  font-weight: bold;  
 }
 
 .content {
@@ -60,42 +60,19 @@ code {
   margin-bottom: 12px;
 }
 
-.blue {
-background-color: #1F7EE6 ;
-}
-
-.green{
-background-color: #1FF206;
-}
-
-.yellow{
-background-color: #D2FC00;
-}
-
-.orange{
-background-color: #FF8900;
-}
-
-.purple {
-background-color: #CF2AFF ;
-}
-
-.pink{
-background-color: #FE96DB;
-}
-
-.gray {
-background-color: #81888A ;  
-}
-
-.brown{
-background-color: #924D0D ;
-}
-
 .filterCalendar {
-  margin-right: 50px;
+  margin-right: 20px;
   margin-left: 10px;
-  
+}
+
+.filterSection {
+  background-color: white;
+  border-radius: 10px;
+  padding: 10px 20px 15px 20px;
+  margin: 0 50px 50px 50px;
+  margin-left: 50px;
+  margin-right: 50px;
+  box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.19);
 }
 
 #appSelector {

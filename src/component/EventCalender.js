@@ -1,9 +1,8 @@
 import React, {Component} from "react";
-// import {Table} from "react-bootstrap";
 import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
-import timeGridPlugin from '@fullcalendar/timegrid'
-import interactionPlugin from '@fullcalendar/interaction'
+import timeGridPlugin from '@fullcalendar/timegrid';
+import interactionPlugin from '@fullcalendar/interaction';
 import Axios from "axios";
 import "datatables.net-dt/js/dataTables.dataTables";
 import "datatables.net-dt/css/jquery.dataTables.min.css";
@@ -16,9 +15,6 @@ import 'datatables.net-buttons/js/buttons.print';
 import "jquery/dist/jquery.min.js";
 import $ from "jquery";
 import Swal from "sweetalert2";
-import ReactHTMLTableToExcel from "react-html-table-to-excel";
-// import MaterialTable, { MTableToolbar } from "material-table";
-// import MUIDataTable from "mui-datatables";
 
 class EventCalender extends Component{
     constructor(props){
@@ -26,27 +22,33 @@ class EventCalender extends Component{
 
         this.state = {
             fields : {},
+            errors : {},
             schedule : [],
             number : 1,
-            fileName : 'SQi Schedule'
+            fileName : 'SQi Schedule',
+            title : [],
+            start : [],
+            end : [],
+            color : [],
+            temp : [],
+            temporary : []
         }
 
     }
 
     componentDidMount(event) {
         this.getSchedule();
-        
     }
 
     getSchedule() {
-        Axios.get('/sqi-schedule/get-schedule')
+        Axios.get('http://localhost:8001/sqi-schedule/get-schedule')
         .then((response) => {
             const dataSchedule = response.data;
             this.setState({
                 schedule : dataSchedule
             });
             // DATATABLE 
-            $(function() {
+            // $(function() {
                 // Setup - add a text input to each footer cell
                 $('.filter').each( function (i) {
                     var title = $('#example thead th').eq( $(this).index() ).text();
@@ -79,21 +81,58 @@ class EventCalender extends Component{
                         .search( this.value )
                         .draw();
                 } );
-            })
-
-
-            
-            // $(function() {
-            //     $("#example").DataTable({
-            //         responsive : true,
-            //     })
             // })
         });
         
     }
 
+    handleValidation() {
+        let fields = this.state.fields;
+        let errors = {};
+        let formIsValid = true;
+    
+        //Task
+        if (!fields["task"]) {
+          formIsValid = false;
+          errors["task"] = "Task cannot be empty";
+        }
+    
+        //Application
+        if (!fields["app"]) {
+          formIsValid = false;
+          errors["app"] = "Application cannot be empty";
+        }
+    
+        //Application
+        if (!fields["fromDate"]) {
+            formIsValid = false;
+            errors["fromDate"] = "Cannot be empty";
+          }
+        
+        //Application
+        if (!fields["fromTime"]) {
+            formIsValid = false;
+            errors["fromTime"] = "Cannot be empty";
+        }
+
+        //Application
+        if (!fields["toDate"]) {
+            formIsValid = false;
+            errors["toDate"] = "Cannot be empty";
+        }
+
+        //Application
+        if (!fields["toTime"]) {
+            formIsValid = false;
+            errors["toTime"] = "Cannot be empty";
+        }
+    
+        this.setState({ errors: errors });
+        return formIsValid;
+    }
+
     getScheduleById = (id) => {
-        Axios.get('/sqi-schedule/get-scheduleById/' + id)
+        Axios.get('http://localhost:8001/sqi-schedule/get-scheduleById/' + id)
         .then((response)=>{
             console.log(response.data)
             this.setState({
@@ -111,7 +150,7 @@ class EventCalender extends Component{
     }
 
     deleteSchedule = (id) => {
-        Axios.delete('/sqi-schedule/delete-schedule/' + id)
+        Axios.delete('http://localhost:8001/sqi-schedule/delete-schedule/' + id)
         .then((response)=>{
             Swal.fire({
                 icon : 'success',
@@ -126,34 +165,89 @@ class EventCalender extends Component{
         })
     }
 
-    taskSubmit(event){
+    submitTask(e) {
+        e.preventDefault();
         const fields = this.state.fields;
-        const schedule = {
-            task : fields["task"],
-            app : fields["app"][1],
-            fromDate : fields["fromDate"],
-            toDate : fields["toDate"],
-            fromTime : fields["fromTime"],
-            toTime :fields["toTime"],
-            // color : fields["color"]
-            color : fields["app"][0]
-        }
-        console.log(schedule);
+        if(this.handleValidation()){
+            // $('#addTaskModal').modal('toggel');
 
-        Axios.post('/sqi-schedule/add-schedule', schedule)
-        .then((response)=>{
+            const schedule = {
+                task : fields["task"],
+                app : fields["app"][1],
+                fromDate : fields["fromDate"],
+                toDate : fields["toDate"],
+                fromTime : fields["fromTime"],
+                toTime :fields["toTime"],
+                color : fields["app"][0]
+            }
+            console.log(schedule);
+    
+            Axios.post('http://localhost:8001/sqi-schedule/add-schedule', schedule)
+            .then((response)=>{
+                Swal.fire({
+                    icon : 'success',
+                    title : 'Success',
+                    text : "Your Task Has Been Added",
+                    confrimButtonText : "OK"
+                }).then((result)=>{
+                    if(result.isConfirmed){
+                        window.location.reload();
+                    }
+                })
+            })
+        } else {
             Swal.fire({
-                icon : 'success',
-                title : 'Success',
-                text : "Your Task Has Been Added",
-                confrimButtonText : "OK"
-            }).then((result)=>{
-                if(result.isConfirmed){
-                    window.location.reload();
+              icon: 'warning',
+              title: 'Sorry !',
+              text: 'You Must Fill The Requirement !',
+              confirmButtonText: `OK`
+            }).then((result) => {
+                if(result.isConfirmed) {
                 }
             })
-        });
+    
+          }
     }
+    
+    handleUpdateValidation(){
+        let errors = {};
+        let formIsValid = true;
+
+        if(this.state.task === ""){
+            formIsValid = false;
+            errors["task"] = "Task cannot be empty"
+        }
+
+        this.setState({ errors : errors});
+        return formIsValid;
+    }
+    // taskSubmit(event){
+    //     const fields = this.state.fields;
+    //     const schedule = {
+    //         task : fields["task"],
+    //         app : fields["app"][1],
+    //         fromDate : fields["fromDate"],
+    //         toDate : fields["toDate"],
+    //         fromTime : fields["fromTime"],
+    //         toTime :fields["toTime"],
+    //         color : fields["app"][0]
+    //     }
+    //     console.log(schedule);
+
+    //     Axios.post('http://localhost:8080/sqi-schedule/add-schedule', schedule)
+    //     .then((response)=>{
+    //         Swal.fire({
+    //             icon : 'success',
+    //             title : 'Success',
+    //             text : "Your Task Has Been Added",
+    //             confrimButtonText : "OK"
+    //         }).then((result)=>{
+    //             if(result.isConfirmed){
+    //                 window.location.reload();
+    //             }
+    //         })
+    //     });
+    // }
 
     updateSchedule = (id) => {
         const schedule = {
@@ -167,7 +261,8 @@ class EventCalender extends Component{
         }
         console.log(schedule);   
 
-        Axios.put('/sqi-schedule/update-schedule/' + id, schedule)
+        if(this.handleUpdateValidation()){
+        Axios.put('http://localhost:8001/sqi-schedule/update-schedule/' + id, schedule)
         .then((response)=>{
             Swal.fire({
                 icon: 'success',
@@ -179,7 +274,19 @@ class EventCalender extends Component{
                     window.location.reload();
                   }
               })
-        })
+            })
+        } else {
+            Swal.fire({
+              icon: 'warning',
+              title: 'Sorry !',
+              text: 'You Must Fill The Requirement !',
+              confirmButtonText: `OK`
+            }).then((result) => {
+                if(result.isConfirmed) {
+                }
+            })
+    
+          }
     }
 
     handleUpdateSchedule = (e) => {
@@ -204,74 +311,132 @@ class EventCalender extends Component{
     handleChangeApp(field, e) {
         let fields = this.state.fields;
         fields[field] = e.target.value.split(",");
-        const color = fields[field][0];
-        const app = fields[field][1];
         this.setState({ fields });
     }
-    
-    // exportTableToExcel(tableID, filename = ''){
-    //     var downloadLink;
-    //     var dataType = 'application/vnd.ms-excel';
-    //     var tableSelect = document.getElementById("example1");
-    //     var tableHTML = tableSelect.outerHTML.replace(/ /g, '%20');
-        
-    //     // Specify file name
-    //     filename = filename?filename+'.xls':'excel_data.xls';
-        
-    //     // Create download link element
-    //     downloadLink = document.createElement("a");
-        
-    //     document.body.appendChild(downloadLink);
-        
-    //     if(navigator.msSaveOrOpenBlob){
-    //         var blob = new Blob(['\ufeff', tableHTML], {
-    //             type: dataType
-    //         });
-    //         navigator.msSaveOrOpenBlob( blob, filename);
-    //     }else{
-    //         // Create a link to the file
-    //         downloadLink.href = 'data:' + dataType + ', ' + tableHTML;
-        
-    //         // Setting the file name
-    //         downloadLink.download = filename;
-            
-    //         //triggering the function
-    //         downloadLink.click();
-    //     }
-    // }
 
-    // jQuery DataTable
-    filterTable() {
-        // Setup - add a text input to each footer cell
-        // $('#example tfoot th').each( function (i) {
-        //     var title = $('#example thead th').eq( $(this).index() ).text();
-        //     $(this).html( '<input type="text" placeholder="Search '+title+'" data-index="'+i+'" />' );
-        // } );
-      
-        // // DataTable
-        // var table = $('#example').DataTable( {
-        //     scrollY:        "300px",
-        //     scrollX:        true,
-        //     scrollCollapse: true,
-        //     paging:         true,
-        //     fixedColumns:   true
-        // } );
-     
-        // // Filter event handler
-        // $( table.table().container() ).on( 'keyup', 'tfoot input', function () {
-        //     table
-        //         .column( $(this).data('index') )
-        //         .search( this.value )
-        //         .draw();
-        // } );
+    handleEvent = (e) => {
+        Axios.get('http://localhost:8001/sqi-schedule/get-schedule')
+        .then((response) => {
+            const app = e.target.value;
+            const dataSchedule = response.data;
+
+            this.setState({
+                temp : dataSchedule
+            })
+            const temporary = this.state.temp
+
+            this.setState({
+                temporary : temporary
+            })
+
+            let filterEvent = [];
+            temporary.map((result)=>{
+                if(app === "CRM Halo" && result.app === "CRM Halo"){
+                    filterEvent.push(result);
+                    console.log(filterEvent);
+
+                    this.setState({
+                        temporary : filterEvent
+                    })
+                    
+                }if(app === "Halo Lite" && result.app === "Halo Lite"){
+                    // console.log("Halo Lite")
+                    filterEvent.push(result);
+                    console.log(filterEvent);
+
+                    this.setState({
+                        temporary : filterEvent
+                    })
+                }if(app === "Halo Apps" && result.app === "Halo Apps"){
+                    // console.log("Halo Apps")
+                    filterEvent.push(result);
+                    console.log(filterEvent);
+
+                    this.setState({
+                        temporary : filterEvent
+                    })
+                    console.log(this.state.title)
+                }if(app === "Specta" && result.app === "Specta"){
+                    // console.log("Specta")
+                    filterEvent.push(result);
+                    console.log(filterEvent);
+
+                    this.setState({
+                        temporary : filterEvent
+                    })
+                    
+                }if(app === "Telephony" && result.app === "Telephony"){
+                    // console.log("Telephony")
+                    filterEvent.push(result);
+                    console.log(filterEvent);
+
+                    this.setState({
+                        temporary : filterEvent
+                    })
+
+                }if(app === "SOSMED" && result.app === "SOSMED"){
+                    
+                    filterEvent.push(result);
+                    console.log(filterEvent);
+
+                    this.setState({
+                        temporary : filterEvent
+                    })
+                }if(app === "Chain" && result.app === "Chain"){
+                    
+
+                    filterEvent.push(result);
+                    console.log(filterEvent);
+
+                    this.setState({
+                        temporary : filterEvent
+                    })
+                }else if(app === "MQA" && result.app === "MQA"){
+                    
+                    filterEvent.push(result);
+                    console.log(filterEvent);
+
+                    this.setState({
+                        temporary : filterEvent
+                    })
+                }if(app === "All") {
+                    this.setState({
+                        temporary : temporary
+                    })
+                }
+            })
+            
+        })   
     }
 
+    resetModal = () => {
+        let fields = this.state.fields;
+        fields["task"] = "";
+        fields["app"] = "";
+        fields["fromDate"] = "";
+        fields["fromTime"] = "";
+        fields["toDate"] = "";
+        fields["toTime"] = ""
 
+        let errors= {}
+        errors["task"] = "";
+        errors["app"] = "";
+        errors["fromDate"] = "";
+        errors["fromTime"] = "";
+        errors["toDate"] = "";
+        errors["toTime"] = ""
+
+        this.setState({
+            fields : fields,
+            errors : errors
+        });
+
+    }
     render(){
-        const { schedule } = this.state;
+        const { schedule, temporary } = this.state;
         let { number } = this.state;
         return(
-            <div className = "content">
+            <div className = "content contentSection">
                 <section className="titleSection">
                     <div className="titleWeb">                       
                         <h3>
@@ -284,7 +449,7 @@ class EventCalender extends Component{
 
                 <section className="contentSection">
                     {/* Add Task Button */}
-                    <button type="button" className="btn btn-primary addTask" data-bs-toggle="modal" data-bs-target="#addTaskModal">
+                    <button type="button" className="btn btn-primary addTask contentSection" data-bs-toggle="modal" data-bs-target="#addTaskModal">
                     <div><span class="material-icons inputTask" style={{position : "relative"}}>assignment</span></div>
                     Add Task
                     </button>
@@ -302,6 +467,9 @@ class EventCalender extends Component{
                             </h5>
                             <button type="button" className="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                         </div>
+                        <form role="form"
+                        onSubmit={this.submitTask.bind(this)}
+                        >
                             <div className="modal-body">
                                 <div className="card-body">
                                     <div className="row">
@@ -315,12 +483,13 @@ class EventCalender extends Component{
                                                         <input
                                                         name="task"
                                                         className="col-md-12" 
-                                                        // rows="1.5" 
-                                                        // cols="52" 
                                                         placeholder="-- Enter Your Task --"
                                                         onChange={this.handleChange.bind(this, "task")}
                                                         value ={this.state.fields["task"]}
                                                         />
+                                                        <span style={{ color: "red", fontSize :"15px"}}>
+                                                            {this.state.errors["task"]}
+                                                        </span>
                                                     </div>
                                                 </div>
                                             
@@ -343,12 +512,15 @@ class EventCalender extends Component{
                                                         <option className="selectApp" id="crmHalo" value="#62A1F3,CRM Halo">CRM Halo</option>
                                                         <option className="selectApp" id="haloLite" value="#71E263,Halo Lite">Halo Lite</option>
                                                         <option className="selectApp" id="haloApps"value="#F2F171,Halo Apps">Halo Apps</option>
-                                                        <option className="selectApp" id ="spekta"value="#F8C957,Specta">Specta</option>
+                                                        <option className="selectApp" id ="specta"value="#F8C957,Specta">Specta</option>
                                                         <option className="selectApp" id="telephony" value="#E18FF0,Telephony">Telephony</option>
                                                         <option className="selectApp" id="sosmed" value="#FF66C5,SOSMED">SOSMED</option>
                                                         <option className="selectApp" id="chain" value="#CDBCCF,Chain">Chain</option>
                                                         <option className="selectApp" id="mqa" value="#D8854F,MQA">MQA</option>
                                                     </select>
+                                                    <span style={{ color: "red", fontSize :"15px" }}>
+                                                           {this.state.errors["app"]}
+                                                    </span>
                                                 </div>
                                             </div>                                
                                         </div>
@@ -367,6 +539,7 @@ class EventCalender extends Component{
                                                         placeholder="Start"
                                                         onChange={this.handleChange.bind(this,"fromDate")}
                                                         value={this.state.fields["fromDate"]}/>
+                                                        
 
                                                         {/* From Time */}
                                                         <input 
@@ -375,7 +548,14 @@ class EventCalender extends Component{
                                                         name="fromTime"
                                                         onChange={this.handleChange.bind(this,"fromTime")}
                                                         value={this.state.fields["fromTime"]}/>
-                                                    </div>                                                                                          
+                                                                                                                
+                                                    </div>
+                                                    <span className="col-sm-6" style={{ color: "red", fontSize :"15px" }}>
+                                                        {this.state.errors["fromDate"]}
+                                                    </span>
+                                                    <span className="col-sm-3" style={{ color: "red", fontSize :"15px" }}>
+                                                            {/* {this.state.errors["fromTime"]} */}
+                                                    </span>                                                                                          
                                             </div>                                
                                         </div>
 
@@ -393,6 +573,8 @@ class EventCalender extends Component{
                                                     placeholder="Finish"
                                                     onChange={this.handleChange.bind(this,"toDate")}
                                                     value={this.state.fields["toDate"]}/>
+                                                    
+
 
                                                     {/* To Time */}
                                                     <input 
@@ -401,7 +583,15 @@ class EventCalender extends Component{
                                                         name="toTime"
                                                         onChange={this.handleChange.bind(this,"toTime")}
                                                         value={this.state.fields["toTime"]}/>
+                                                    
+
                                                 </div>
+                                                <span className="col-sm-6" style={{ color: "red", fontSize :"15px" }}>
+                                                        {this.state.errors["toDate"]}
+                                                </span>
+                                                <span className="col-sm-3" style={{ color: "red", fontSize :"15px" }}>
+                                                        {/* {this.state.errors["toTime"]} */}
+                                                </span>
                                                 
                                             </div>                                
                                         </div>
@@ -409,10 +599,13 @@ class EventCalender extends Component{
                                 </div>
                             </div> 
                             <div className="modal-footer">
-                                <button type="button" className="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                                <button type="button" className="btn btn-primary" onClick={this.taskSubmit.bind(this)}>Save changes</button>
+                                <button type="button" className="btn btn-secondary" data-bs-dismiss="modal" onClick={this.resetModal}>Cancel</button>
+                                <button type="submit" className="btn btn-primary" 
+                                // onClick={this.taskSubmit.bind(this)}
+                                >
+                                    Save changes</button>
                             </div>
-                        {/* </form>  */}
+                        </form> 
                     </div>
                     </div>
                 </div>
@@ -450,6 +643,7 @@ class EventCalender extends Component{
                             <h5 className="modal-title" id="exampleModalLabel">Edit Your Task</h5>
                             <button type="button" className="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                         </div>
+                        <form>
                             <div className="modal-body">
                                 <div className="card-body">
                                     <div className="row">
@@ -463,12 +657,13 @@ class EventCalender extends Component{
                                                         <input
                                                         name="task"
                                                         className="col-md-12" 
-                                                        // rows="1.5" 
-                                                        // cols="52" 
                                                         placeholder="-- Enter Your Task --"
                                                         onChange={this.handleUpdateSchedule}
                                                         value ={this.state.task}
                                                         />
+                                                        <span style={{ color: "red", fontSize :"15px" }}>
+                                                            {this.state.errors["task"]}
+                                                        </span>
                                                     </div>
                                                 </div>
                                             
@@ -487,14 +682,14 @@ class EventCalender extends Component{
                                                     id="appItem"
                                                     onChange={this.handleUpdateApp}
                                                     value={this.state.app}>
-                                                        <option value="null">{this.state.app}</option>
-                                                        <option className="selectApp" value="#62A1F3,CRM Halo">CRM Halo</option>
-                                                        <option className="selectApp" value="#71E263,Halo Lite">Halo Lite</option>
-                                                        <option className="selectApp" value="#F2F171,Halo Apps">Halo Apps</option>
-                                                        <option className="selectApp" value="#F8C957,Specta">Specta</option>
-                                                        <option className="selectApp" value="#E18FF0,Telephony">Telephony</option>
-                                                        <option className="selectApp" value="#FF66C5,SOSMED">SOSMED</option>
-                                                        <option className="selectApp" value="#CDBCCF,Chain">Chain</option>
+                                                        <option>-- Choose Application --</option>
+                                                        <option className="selectApp" value="#70B6CB,CRM Halo">CRM Halo</option>
+                                                        <option className="selectApp" value="#70CB8C,Halo Lite">Halo Lite</option>
+                                                        <option className="selectApp" value="#D3E85C,Halo Apps">Halo Apps</option>
+                                                        <option className="selectApp" value="#DE9457,Specta">Specta</option>
+                                                        <option className="selectApp" value="#CD89E8,Telephony">Telephony</option>
+                                                        <option className="selectApp" value="#F274E2,SOSMED">SOSMED</option>
+                                                        <option className="selectApp" value="#86542c,Chain">Chain</option>
                                                         <option className="selectApp" value="#D8854F,MQA">MQA</option>
                                                     </select>
                                                 </div>
@@ -557,36 +752,45 @@ class EventCalender extends Component{
                                 </div>
                             </div> 
                             <div className="modal-footer">
-                                <button type="button" className="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                                <button type="button" className="btn btn-secondary" data-bs-dismiss="modal" onClick={this.resetModal}>Cancel</button>
                                 <button type="button" className="btn btn-primary" onClick={()=> this.updateSchedule(this.state.id)}>Save changes</button>
                             </div>
-                        {/* </form>  */}
+                        </form> 
                     </div>
                     </div>
                 </div>
             </section>
 
-            <section>
-                <div className="col-lg-4">
-                    <label for="calendar_view">Filter Applications</label>
-                        <div className="input-group">
-                            <select className="filter" id="calendar_filter" multiple={true}>
-                                <option value="CRM Halo">CRM Halo</option>
-                                <option value="Halo Lite">Halo Lite</option>
-                                <option value="Halo Apps">Halo Apps</option>
-                                <option value="Specta">Specta</option>
-                                <option value="Telephony">Telephony</option>
-                                <option value="SOSMED">SOSMED</option>
-                                <option value="Chain">Chain</option>
-                                <option value="MQA">MQA</option>
-                            </select>
+            <section className="filterSection contentSection">
+                <div className="col-lg-12">
+                    <label for="calendar_view">Filter Applications :</label>
+                        <div className="custom-control custom-checkbox" data-filter>
+                        <label className="checkbox-inline filterCalendar"></label>
+                                <input className="filterApp" id="all" name="apps" type="radio" value="All" onChange={this.handleEvent}/>All
+                            <label className="checkbox-inline filterCalendar"></label>
+                                <input className="filterApp" id="crmhalo" name="apps" type="radio" value="CRM Halo" onChange={this.handleEvent}/>CRM Halo
+                            <label className="checkbox-inline filterCalendar"></label>
+                                <input className="filterApp" id="halolite" name="apps" type="radio" value="Halo Lite" onChange={this.handleEvent}/>Halo Lite
+                            <label className="checkbox-inline filterCalendar"></label>
+                                <input className="filterApp" id="haloapps" name="apps" type="radio" value="Halo Apps" onChange={this.handleEvent}/>Halo Apps
+                            <label className="checkbox-inline filterCalendar"></label>
+                                <input className="filterApp" id="specta" name="apps" type="radio" value="Specta" onChange={this.handleEvent}/>Specta
+                            <label className="checkbox-inline filterCalendar"></label>
+                                <input className="filterApp" id="telephony" name="apps" type="radio" value="Telephony" onChange={this.handleEvent}/>Telephony
+                            <label className="checkbox-inline filterCalendar"></label>
+                                <input className="filterApp" id="sosmed" name="apps" type="radio" value="SOSMED" onChange={this.handleEvent}/>SOSMED
+                            <label className="checkbox-inline filterCalendar"></label>
+                                <input className="filterApp" id="chain" name="apps" type="radio" value="Chain" onChange={this.handleEvent}/>Chain
+                            <label className="checkbox-inline filterCalendar"></label>
+                                <input className="filterApp" id="mqa" name="apps" type="radio" value="MQA" onChange={this.handleEvent}/>MQA
                         </div>
-                </div>
-                                      
+                </div>                       
             </section>  
 
+            
             <section className="contentSection">
                 <FullCalendar
+                    id="calendar"
                     plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
                     initialView="dayGridMonth"
                     headerToolbar= {{
@@ -595,27 +799,18 @@ class EventCalender extends Component{
                         right: 'dayGridMonth,timeGridWeek,timeGridDay'
                       }}
                     events = {
-                        schedule.map((result)=>{
+                        temporary.map((result)=>{
                             return{
                                 title : `${result.task} - ${result.app}`,
                                 start : `${result.fromDate}T${result.fromTime}`,
                                 end : `${result.toDate}T${result.toTime}`,
-                                color : result.color
+                                color : result.color,
+                                risk : result.app
                             }
                         })  
                     }
                 />
-                </section>
-
-                {/*BUTTON EXPORT TO EXCEL  */}
-                {/* <section id="buttonExport">
-                    <ReactHTMLTableToExcel
-                        className="btn btn-primary"
-                        table="example"
-                        filename="SQiReport"
-                        sheet="Sheet"
-                        buttonText="Export To Excel File"/>
-                </section>*/}               
+                </section>          
                
                 <section id="dataTables" className="contentSection">
                     <table 
@@ -665,128 +860,14 @@ class EventCalender extends Component{
                             );
                         })}
                     </tbody>
-                    {/* <tfoot>
-                        <tr>
-                            <th>No.</th>
-                            <th>Application</th>
-                            <th>Task</th>
-                            <th>From Date</th>
-                            <th>To Date</th>
-                            <th style={{display : "none"}}>Action</th>
-                        </tr>
-                    </tfoot> */}
-
                     </table>
                 </section>
 
 
-                {/* MATERIAL TABLE */}
-                {/* <section style={{margin : "30px"}}>
-                    <MaterialTable
-                    id = "scheduleTable"
-                    title ="Task Scheduling Review"
-                    columns =
-                    {[
-                        { title : 'No.' , field : "no", filtering : false},
-                        { title : 'Application',
-                            field : "app",
-                            lookup : {
-                                "CRM Halo" : 'CRM Halo',
-                                "Halo Lite" : 'Halo Lite',
-                                "Halo Apps" : 'Halo Apps',
-                                "Specta" : 'Specta',
-                                "Telephony" : 'Telephony',
-                                "SOSMED" : 'SOSMED',
-                                "Chain" : 'Chain',
-                                "MQA" : 'MQA'}},
-                        { title : 'Task', field : "task"},
-                        { title : "From Date", field : "fromDate"},
-                        { title : "To Date", field : "toDate"}
-                    ]}
-                    data = {
-                        schedule.map((result)=>{
-                            return{
-                                no : number++,
-                                id : result.id,
-                                app : result.app,
-                                task : result.task,
-                                fromDate : `${result.fromDate}`,
-                                toDate : `${result.toDate}`,
-                            }
-                        })
-                        }
-                    options = 
-                    {{ 
-                        filtering : true,
-                        actionsColumnIndex: -1,
-                        exportButton : true,
-                        rowStyle: {
-                            backgroundColor: '#EEE',
-                          } 
-                    }}
-                    actions = 
-                    {[
-                        {
-                            icon: 'edit',
-                            tooltip : 'Edit Task',
-                            onClick : (event, rowData) => {
-                                console.log(rowData.id);
-                                this.getScheduleById(rowData.id);
-                            }
-                        },
-                        {
-                            icon: 'delete',
-                            tooltip : 'Delete Task',
-                            onClick : (event, rowData) => {
-                                console.log(rowData.id);
-                                this.getScheduleById(rowData.id);
-                            }
-                        }
-                    ]}
-
-                    components={{
-                        Action: props => {
-                            if(props.action.icon === "edit") {
-                                return(
-                                    <button type="button" className="btn btn-warning action" data-bs-toggle="modal" onClick={(event) => props.action.onClick(event, props.data)}data-bs-target="#updateTaskModal"><span class="material-icons">edit</span></button>
-                                )
-                            }
-                            if(props.action.icon === "delete") {
-                                return(
-                                    <button type="button" className="btn btn-danger action" data-bs-toggle="modal" onClick={(event) => props.action.onClick(event, props.data)}data-bs-target="#deleteTaskModal"><span class="material-icons">delete</span></button>
-                                )
-                            }                            
-                        }                           
-                      }}
-                    />
-                </section> */}
-
-                {/* MUI DATATABLE */}
-                {/* <MUIDataTable
-                    title ={"Task Schedule Review"}
-                    data = {
-                            schedule.map((result)=>{
-                                return{
-                                    no : number++,
-                                    id : result.id,
-                                    app : result.app,
-                                    task : result.task,
-                                    fromDate : `${result.fromDate}`,
-                                    toDate : `${result.toDate}`,
-                                }
-                            })
-                            }
-                    columns ={['No','Application','Task','From Date','To Date']}
-                    options= {{filterType :'checkbox'}}
-                    /> */}
+               
                 
             </div>
         );
     }
 }
-
 export default EventCalender;
-
-{/* <section id="buttonExport">
-                    <button className="btn btn-primary" onClick={()=> this.exportTableToExcel("example1")}>Export to Excel</button>
-                </section>  */}
